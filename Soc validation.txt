@@ -3,3 +3,5 @@ Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' 
 Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
 https://github.com/onecloudemoji/CVE-2022-30190.git
+
+https://github.com/onecloudemoji/CVE-2022-30190/archive/refs/heads/main.zip
