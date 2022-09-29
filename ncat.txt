@@ -1,0 +1,103 @@
+# Sample netcat unit test
+# Allow ncat to listen on the VirtualBox Virtual NIC  
+# ---------------------------------------------------
+#
+# Environment:
+# Windows Vista or better with a VirtualBox guest (any OS) connected via VB Host Network
+# External box (any OS) connected via physical NIC.
+# Every OS should have netcat available as a command. 
+# ----------------------------------------------------------
+#
+# Outcome:
+# Internal VB guest should be able to access the netcat port; 
+# External box should NOT be able to access.
+# ------------------------------------------------------------------------------------
+#
+# Netcat:
+# Netcommand is already available in many Linuxes as `nc' command
+# Under Windows you may have the same via Cygwin or 
+# You may may find it part of nmap.org as `ncat'  
+# Be sure `ncs' or `ncat' are in your path 
+#
+# Usage:
+# test.ps1 netcat-path
+# --------------------
+
+  param (
+    [string]$apath = $(throw "Application path is required.")
+    )
+
+
+
+# Usual path checks
+if(-Not (Test-Path -path $apath)) {echo "$apath does not exist"; exit}
+$exe=[System.IO.Path]::GetFileName($apath)
+if(-Not $exe) {echo "$apath does not appear as a file path"; exit} 
+
+
+# delete rules related to ncat.exe
+Echo "Looking for rules with $exe"
+$rules=.\winfire /rs /grep |grep ==Application | grep -i $exe$ | grep -o ^[^=]\+ 
+if ($rules) { Echo "Found rule/s for $exe" } else { Echo "Found no rule for $exe" } 
+Foreach ($r IN $rules) {.\winfire /rd:$r} 
+pause
+
+# VB NICs are named like: VirtualBox Host-Only Network [#n]
+# where "#n" denotes NICs after the first, if any
+# We select the first NIC (no `#')
+$vnic=.\winfire.js /cs:virtual | grep  -v "#"
+if ($vnic) {Echo "Found $vnic" } Else {Echo "No VB NIC found"; Exit}
+pause
+
+
+Echo "Enabling nc/ncat on all interfaces (TCP)"
+$rule= @"
+/ra:ncat-test /app:"$apath" /tcp /lp:3333 /enab 
+"@
+echo "Applying rule:" $rule
+.\winfire  $rule.split()
+.\winfire /rs:ncat-test
+pause
+
+Echo "`nTake note and ping the IP of *this* box from the external box."
+pause
+
+
+Echo "Execute on external box: '<nc/ncat>  <thisip> 3333'"
+pause
+Echo "I am executing  'ncat -l 3333' here.  You should be able to chat."
+Echo "When you are done, hit Ctrl-C in the new window or close it."
+Start-Process -wait  ncat.exe -ArgumentList "-l 3333"
+pause
+
+Echo "Execute on external box '<nc/ncat>  <thisip> -u 3333'"
+Echo "I am executing  'ncat -u -l 3333' here. You should NOT be able to chat via UDP."
+Start-Process -wait ncat.exe -ArgumentList "-u -l 3333"
+pause
+
+Echo "Deleting netcat rule"
+.\winfire /rd:ncat-test
+pause
+
+Echo "Enabling nc/ncat on VB NIC only"
+$rule= @"
+/ra:ncat-test /app:"$apath" /tcp /lp:3333 /enab /if:"$vnic"
+"@
+echo "Applying rule:" $rule
+.\winfire  $rule.split()
+.\winfire /rs:ncat-test
+pause
+
+
+Echo "Execute on external box '<nc/ncat>  <thisip> 3333'"
+Echo "I am executing  'ncat -l 3333' here.  You should not be able to chat anymore."
+Start-Process -wait ncat.exe -ArgumentList "-l 3333"
+pause
+
+Echo "Execute on VB guest '<nc/ncat> 192.168.56.1 3333'"
+Echo "192.168.56.1 is the default IP for 1st VB NIC. If you customised it, modify here accordingly."
+Echo "I am executing  'ncat -l 3333' here. You should be able to chat."
+Start-Process -wait ncat.exe -ArgumentList "-l 3333"
+pause
+
+
