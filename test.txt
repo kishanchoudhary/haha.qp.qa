@@ -1,2 +1,1 @@
-  ivhmz0c9mlw5b6lxh0v209osfjlf94.oastify.com/?haha.qp.qa
-eashoy32qlmp4pblw7qmu69ublhd52.oastify.com
+https://github.com/EmpireProject/Empire/blob/master/data/module_source/credentials/Invoke-PowerDump.ps1
